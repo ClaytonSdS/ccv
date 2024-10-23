@@ -61,8 +61,8 @@ plt.axis('off')
 plt.tight_layout()
 plt.show()
 ```
-#### Figure 1: Filtering Image with Mean Kernel
-Place figure 1 here
+#### Figure 1: Filtering image with mean kernel.
+<img src="https://github.com/ClaytonSdS/ccv/blob/main/tutorial/mean_filter.png"/>
 
 Moreover, you can use more complex filters like gaussian, which accepts both (σ<sub>x</sub>, σ<sub>y</sub>) or just σ as parameter.  
 One possible example using both σ<sub>x</sub> and σ<sub>y</sub> is: 
@@ -121,7 +121,7 @@ result = sobel_image.filtered
 ```
 Notice that the ccv.Filter2D method convolves the image in both the x and y directions, calculating the gradient and its magnitude, and the final result is an array obtained by applying a threshold function to the magnitude of the gradient at each (x, y) coordinate, which produces a black-and-white image as we can on figure 4.   
 
-#### Figure 4: Filtered image by  applying a Sobel kernel
-Place figure 4 here
+#### Figure 4: Filtering image with sobel kernel.
+<img src="https://github.com/ClaytonSdS/ccv/blob/main/tutorial/sobel_filter.png"/>
 
 ## Custom Filters
