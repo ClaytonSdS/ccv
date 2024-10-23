@@ -119,7 +119,7 @@ sobel_image = ccv.Filter2D(image=img, filter="sobel", kernel=(3,3), threshold = 
 result = sobel_image.filtered
 
 ```
-Notice that the ccv.Filter2D method convolves the image in both the x and y directions, calculating the gradient and its magnitude, and the final result is an array obtained by applying a threshold function to the magnitude of the gradient at each (x, y) coordinate, which produces a black-and-white image as we can on figure 4.   
+Notice that the ccv.Filter2D method convolves the image in both the x and y directions, calculating the gradient and its magnitude, and the final result is an array obtained by applying a threshold function to the magnitude of the gradient at each (x, y) coordinate, which produces a black-and-white image as we can see on figure 4.   
 
 #### Figure 4: Filtering image with sobel kernel.
 <img src="https://github.com/ClaytonSdS/ccv/blob/main/tutorial/sobel_filter.png"/>
