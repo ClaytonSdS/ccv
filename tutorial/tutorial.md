@@ -125,3 +125,21 @@ Notice that the ccv.Filter2D method convolves the image in both the x and y dire
 <img src="https://github.com/ClaytonSdS/ccv/blob/main/tutorial/sobel_filter.png"/>
 
 ## Custom Filters
+If you want to use your custom kernel, you must pass it using the "kernel_array" parameter and set the filter parameter as "custom".   
+For example, you can specify your custom filter as:
+
+```python
+from skimage import io
+import ccv
+
+# Reading your image
+image_path = 'ccv/tutorial/car.png' # your image path
+img = io.imread(image_path, as_gray=True)
+
+# Applying your custom filter
+custom_filter = jnp.full((10,10), 1/(10**2))
+custom_image = ccv.Filter2D(image=img, filter="custom", kernel_array=custom_filter)
+result = np.array(custom_image.filtered)
+
+
+```
