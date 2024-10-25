@@ -62,7 +62,6 @@ plt.tight_layout()
 plt.show()
 ```
 #### Figure 1: Filtering image with mean kernel.
-<img src="https://github.com/ClaytonSdS/ccv/blob/main/tutorial/mean_filter.png"/>
 
 Moreover, you can use more complex filters like gaussian, which accepts both (σ<sub>x</sub>, σ<sub>y</sub>) or just σ as parameter.  
 One possible example using both σ<sub>x</sub> and σ<sub>y</sub> is: 
