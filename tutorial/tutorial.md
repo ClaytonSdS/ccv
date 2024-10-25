@@ -51,7 +51,7 @@ import matplotlib.pyplot as plt
 
 plt.figure(figsize=(30, 20))
 plt.subplot(1, 2, 1)
-plt.imshow(image_filter, cmap='gray')
+plt.imshow(img, cmap='gray')
 plt.axis('off')
 
 plt.subplot(1, 2, 2)
