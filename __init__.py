@@ -257,7 +257,7 @@ class Filter2D():
  
   def _singleFilter(self, window):
 
-    if self.filter == "custom":
+    if self.filter == "custom" and "operation" in self.kwargs.keys():
       if self.kwargs["operation"] == "morph_dilation": return jnp.any(window) # dilation
       elif self.kwargs["operation"] == "morph_erosion": return jnp.all(window) # erosion
 
