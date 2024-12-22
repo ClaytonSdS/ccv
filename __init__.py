@@ -1,4 +1,4 @@
-# %%
+#%%
 
 import numpy as np
 import jax.numpy as jnp 
@@ -8,7 +8,6 @@ from jax.lax import dynamic_slice
 from jax.scipy.stats import mode as jnp_mode
 from jax.numpy import pi as pi
 from jax.numpy import e as e
-from jax import jit
 
 class Kernel():
   def __init__(self, shape: tuple, type: str, **kwargs: dict):
@@ -289,8 +288,6 @@ class Filter2D():
       else:
         self.i, self.j = self.kernel  # (i,j) - kernel shape
 
-  # sliding sindow function -> W(x,y)
-
   def _w(self, x, y): 
     # x = row and y = col    
 
@@ -329,6 +326,8 @@ class Filter2D():
       self.upper_m = self.upper_n = 1 # to solve the C_n and C_m issue for even kernels
 
     # odd kernel
+
+
     else:
       self.upper_m = int(( self.i - 1)/2) # number of rows above my image
       self.upper_n = int(( self.j - 1)/2) # number of cols above my image
@@ -340,3 +339,4 @@ class Filter2D():
 
   def binary_threshold(self, threshold, array):
     return jnp.where(array>=threshold, 255, jnp.where(array<threshold, 0, array))
+
