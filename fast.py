@@ -11,13 +11,14 @@ __all__ = ['upsampling_gradient', 'FastBatchCorrelate', 'FastBatchCorrelate']
 
 
 class FastBatchCorrelate:
-    def __init__(self, input, kernel, stride, mode="VALID"):
+    def __init__(self, input, kernel, stride, feature_group=1, mode="VALID"):
         stride = stride[::-1]
         self.result = jax.lax.conv_general_dilated(
             lhs=input,
             rhs=kernel,
             window_strides=stride,
             padding=mode,
+            feature_group_count=feature_group
             #dimension_numbers=("NCHW", "OIHW", "NCHW")
         )
 
@@ -34,18 +35,23 @@ class FastBatchConvolve(FastBatchCorrelate):
 class upsampling_gradient:
     def __new__(cls, gradient, stride):
         s_x, s_y = stride
-        i, rows, cols = gradient.shape
+        batch, i, rows, cols = gradient.shape  # Agora temos batch e i como as dimensões
 
         dilated_rows = (rows - 1) * s_y + 1
         dilated_cols = (cols - 1) * s_x + 1
 
+        # Função de upsampling para cada kernel (ou unidade)
         def upsampling(channel_grad):
             dilated = jnp.zeros((dilated_rows, dilated_cols))
             dilated = dilated.at[::s_y, ::s_x].set(channel_grad)
             return dilated
 
-        upsampling_per_kernel = jax.vmap(upsampling, in_axes=0)
-        dilate = jax.vmap(upsampling_per_kernel, in_axes=0)
+        # Aplique upsampling a cada "channel" (i) do tensor, independentemente para cada amostra no batch
+        upsampling_per_kernel = jax.vmap(upsampling, in_axes=0)  # Mapeia ao longo da dimensão "i" (canal)
+        
+        # Agora, mapeamos sobre o batch (primeira dimensão)
+        dilate = jax.vmap(upsampling_per_kernel, in_axes=0)  # Mapeia ao longo da dimensão "batch"
 
-        return dilate(gradient[None, ::, ::, ::]).squeeze(axis=0)
+        # Aplica a dilatação no gradiente com a nova forma
+        return dilate(gradient)
 

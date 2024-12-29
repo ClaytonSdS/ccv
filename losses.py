@@ -44,19 +44,32 @@ class CategoricalCrossEntropy:
         epsilon = 1e-7
         y_pred = jnp.clip(y_pred, epsilon, 1 - epsilon)
         loss = -jnp.mean(y_true * jnp.log(y_pred), axis=0)
-
+        print(f"Loss: {loss}")
         return loss
+
+    @staticmethod
+    def derivative_off(y_true, y_pred, **kwargs):
+        # A derivada da Categorical Cross-Entropy é dada por:
+        epsilon = 1e-7
+        y_pred = jnp.clip(y_pred, epsilon, 1 - epsilon)  # Para evitar divisões por 0
+        grad = - y_true / y_pred
+        return grad
 
     @staticmethod
     def derivative(y_true, y_pred, **kwargs):
         if kwargs["lastActivation"] == "softmax":
-            equal = jnp.array_equal(y_pred, y_true)
-            print(f"CategoricalCrossEntropy: {equal}")
-            return   y_pred - y_true
+            backward = y_pred - y_true
+            print(f"[Loss-backward] {backward.shape}")
+
+            if jnp.any(jnp.isnan(backward)):
+                print(f"[Loss-backward]  NAN WARNING {jnp.sum(backward)}")
+                return "nan"
+
+            else:
+                return backward
         
         else:
             epsilon = 1e-7
             y_pred = jnp.clip(y_pred, epsilon, 1 - epsilon)
-            
             grad = - y_true/y_pred
             return grad

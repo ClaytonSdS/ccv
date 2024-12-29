@@ -2,6 +2,7 @@ from losses import BinaryCrossEntropy
 from losses import MeanSquaredError
 from losses import CategoricalCrossEntropy
 import jax.numpy as jnp
+import jax
 
 
 def clip_gradients(gradients, clip_value=1.0):
@@ -27,8 +28,11 @@ class Sequential:
         }
         input_shape = primary_shape[primary_layer.tag]
 
+        pos = 1
         for layer in self.layers:
             out_tmp = layer.constructor(input_shape)
+            layer.pos_in_model = pos
+            pos += 1
 
             print(f"layer: {layer.tag} input: {input_shape}: output: {out_tmp}")
             input_shape = layer.constructor(input_shape)
@@ -54,53 +58,78 @@ class Sequential:
         }
 
 
-    def fit(self, X_train, Y_train, epochs):
+    def fit(self, X_train, Y_train, epochs, batch_size=1):
         last_layer = self.layers[-1]
         lastActivation = last_layer.activation_function
         last_layer.model_loss = self.model_loss
-        
-        print(f"O shape inicial é: {X_train[0].shape}")
-        self.build_layers(data_shape=X_train[0].shape)
+
+        data_shape = (batch_size, *X_train[0].shape)
+
+        print(f"O shape inicial é: {data_shape}")
+        self.build_layers(data_shape)
 
         self.epoch_losses = []  # Lista para armazenar a loss média de cada época
 
+        nan_break = False
+
         for e in range(epochs):
-            error = 0 
-            print(f"epoch: {e}")
-            for X, Y in zip(X_train, Y_train):
-                # Forward Pass
-                output = X
+            error = 0
+            print(f"\nEpoch: {e}")
+
+            if nan_break:
+                break
+            
+            # Embaralhar os dados para garantir que o treinamento seja aleatório
+            self.rng = jax.random.PRNGKey(11) 
+            permutation = jax.random.permutation(self.rng, len(X_train))
+            X_train_shuffled = X_train[permutation]
+            Y_train_shuffled = Y_train[permutation]
+            
+            # Loop por lotes
+            for start in range(0, len(X_train), batch_size):
+                end = min(start + batch_size, len(X_train))
+                X_batch = X_train_shuffled[start:end]
+                Y_batch = Y_train_shuffled[start:end]
+
+                # Forward Pass para todo o lote
+                output = X_batch
                 for layer in self.layers:
-                    output = layer.forward(output)
-                
-                # Verificação da saída após a função de perda
-                error += self.loss(Y, output)
-                #print(f"Erro após a função de perda: {error}, epoch: {e}")
-                
-                # Backward Pass
-                gradient = self.loss.derivative(Y, output, lastActivation=lastActivation)
-                #print(f"layer{layer} Gradiente inicial: {gradient}")
-
-                # Verificação se o gradiente contém NaN ou Inf
-                if jnp.any(jnp.isnan(gradient)):
-                    print(f"[{epochs}] Gradiente contém NaN antes da retropropagação!, na camada {layer}")
-                    break
-
-                if jnp.any(jnp.isinf(gradient)):
-                    print(f"[{epochs}] Gradiente contém Inf antes da retropropagação!, na camada {layer}")
-                    break
-
-                for layer in reversed(self.layers):
-                    #gradient = clip_gradients(gradient)
-                    gradient = layer.backward(gradient, self.learning_rate)
-
-            mean_loss = error / len(X_train)
-            self.epoch_losses.append(mean_loss)
+                    layer.Y_BATCH = Y_batch
                     
+                    output = layer.forward(output)
+
+                # Calcular o erro para o lote
+                batch_error = jnp.mean(self.loss(Y_batch, output))  # Média do erro sobre o lote
+                error += batch_error
+
                 
-        
-        error /= len(X_train)
-        print(f"Resultado final {error}")
+                # Backward Pass para todo o lote
+                gradient = self.loss.derivative(Y_batch, output, lastActivation=lastActivation)
+
+                if gradient == "nan":
+                    nan_break = True
+                    print(f"NAN ERROR in LOSS")
+                    break
+                
+                epsilon = 1e-9
+                # Retropropagação para todas as camadas
+                for layer in reversed(self.layers):
+                    gradient = layer.backward(gradient, self.learning_rate)
+                    gradient = jnp.clip(gradient, epsilon, 1/epsilon)
+
+                    if gradient == "nan":
+                        nan_break = True
+                        print(f"NAN ERROR in {layer.tag}-{layer.pos_in_model} layer")
+                        break
+
+
+            mean_loss = error / (len(X_train) // batch_size)
+            self.epoch_losses.append(mean_loss)
+                        
+                    
+            
+            error /= len(X_train)
+            print(f"[{e+1}/{epochs}] loss: {error}")
 
     def evaluate(self, x_test, y_test):
         # Fazendo a predição para o conjunto de teste
@@ -123,20 +152,20 @@ class Sequential:
         # Retornando o dicionário com acertos e erros
         return {"acertos": int(correct), "erros": int(errors), "accuracy": accuracy}
 
-    def predict(self, x_test, *kwargs):
+    def predict(self, x_test, batch_size=32, *kwargs):
+        x_test = jnp.array(x_test).astype("float32")
         predictions = []
-        for x in x_test:
-            output = x
-            # Passando pela rede
-            for layer in self.layers:
-                output = layer.forward(output)
+        num_samples = len(x_test)
 
-            # Pegando o índice da classe com maior probabilidade
-            value = output[jnp.argmax(output)][0]
-            pred = jnp.where(output==value, 1, jnp.where(output!=value, 0, output))
-            predictions.append(pred)
+        batch_predictions = []
+        
+        output = x_test
+        for layer in self.layers:
+            output = layer.forward(output)
+            
+        batch_predictions.append(output)
 
-        return jnp.array(predictions)
+        return batch_predictions
     
     def predict_one(self, x):
         output = x
