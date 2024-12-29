@@ -2,10 +2,12 @@
 import numpy as np
 
 try:
+    from .activations import ReLu, Tanh, Sigmoid, Softmax
     from .fast import upsampling_gradient as UpSamplingGradient
     from .fast import FastBatchCorrelate as BatchCorrelate
 
 except ImportError:
+    from activations import ReLu, Tanh, Sigmoid, Softmax
     from fast import upsampling_gradient as UpSamplingGradient
     from fast import FastBatchCorrelate as BatchCorrelate
 
@@ -18,7 +20,7 @@ from jax.nn import softmax as jnp_softmax
 from jax.scipy.signal import correlate
 from jax import lax
 
-import activations 
+
 from scipy import signal
 
 
@@ -41,10 +43,10 @@ class Layer():
         self.islastlayer = False
         self.last_function = None
         self.model_loss = None
-        self.activation = {"tanh":activations.Tanh,
-                           "softmax":activations.Softmax,
-                           "sigmoid":activations.Sigmoid,
-                           "relu":activations.ReLu}
+        self.activation = {"tanh":Tanh,
+                           "softmax":Softmax,
+                           "sigmoid":Sigmoid,
+                           "relu":ReLu}
 
     def forward(self):
         pass
