@@ -1,6 +1,13 @@
-from losses import BinaryCrossEntropy
-from losses import MeanSquaredError
-from losses import CategoricalCrossEntropy
+try:
+    from .losses import BinaryCrossEntropy
+    from .losses import MeanSquaredError
+    from .losses import CategoricalCrossEntropy
+
+except ImportError:
+    from losses import BinaryCrossEntropy
+    from losses import MeanSquaredError
+    from losses import CategoricalCrossEntropy
+
 import jax.numpy as jnp
 import jax
 

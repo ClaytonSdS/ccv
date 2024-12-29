@@ -1,7 +1,14 @@
 # %%
 import numpy as np
-from fast import upsampling_gradient as UpSamplingGradient
-from fast import FastBatchCorrelate as BatchCorrelate
+
+try:
+    from .fast import upsampling_gradient as UpSamplingGradient
+    from .fast import FastBatchCorrelate as BatchCorrelate
+
+except ImportError:
+    from fast import upsampling_gradient as UpSamplingGradient
+    from fast import FastBatchCorrelate as BatchCorrelate
+
 import tensorflow as tf
 
 import jax
