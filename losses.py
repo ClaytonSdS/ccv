@@ -1,6 +1,7 @@
 #%%
+import tensorflow as tf
 import jax.numpy as jnp
-
+import keras
 
 class MeanSquaredError:
     def __new__(cls, y_true, y_pred):
@@ -39,37 +40,34 @@ class CategoricalCrossEntropy:
     def __new__(cls, y_true, y_pred):
         return cls.evaluate(y_true, y_pred)
 
-    @staticmethod
     def evaluate(y_true, y_pred):
         epsilon = 1e-7
-        y_pred = jnp.clip(y_pred, epsilon, 1 - epsilon)
-        loss = -jnp.mean(y_true * jnp.log(y_pred), axis=0)
-        print(f"Loss: {loss}")
-        return loss
+        y_pred = tf.clip_by_value(y_pred, epsilon, 1 - epsilon)
 
-    @staticmethod
-    def derivative_off(y_true, y_pred, **kwargs):
-        # A derivada da Categorical Cross-Entropy é dada por:
-        epsilon = 1e-7
-        y_pred = jnp.clip(y_pred, epsilon, 1 - epsilon)  # Para evitar divisões por 0
-        grad = - y_true / y_pred
-        return grad
+        #print(f"y_pred: {y_pred.shape} | y_true: {y_true.shape}")
+        loss_keras = keras.losses.CategoricalCrossentropy(reduction='sum_over_batch_size', axis=-1)
+        loss_keras = float(loss_keras(y_true, y_pred))
 
-    @staticmethod
+
+        # nan check
+        if tf.reduce_any(tf.math.is_nan(y_pred)).numpy():
+            print(f"[Loss-forward] nan found in y_pred[{y_pred.shape}]")
+        #
+        #print(f"[CategoricalCrossEntropy] keras_loss: {loss_keras}")
+        return loss_keras
+
     def derivative(y_true, y_pred, **kwargs):
-        if kwargs["lastActivation"] == "softmax":
-            backward = y_pred - y_true
-            print(f"[Loss-backward] {backward.shape}")
+        y_true = tf.squeeze(y_true, axis=-1)
+        y_pred = tf.squeeze(y_pred, axis=-1)
+        loss_fn = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
 
-            if jnp.any(jnp.isnan(backward)):
-                print(f"[Loss-backward]  NAN WARNING {jnp.sum(backward)}")
-                return "nan"
+        with tf.GradientTape() as tape:
+            tape.watch(y_pred)  # Definindo y_pred como um tensor a ser observado
+            loss_value = loss_fn(y_true, y_pred)  # Calcula a perda novamente dentro do tape
 
-            else:
-                return backward
-        
-        else:
-            epsilon = 1e-7
-            y_pred = jnp.clip(y_pred, epsilon, 1 - epsilon)
-            grad = - y_true/y_pred
-            return grad
+        gradient = tape.gradient(loss_value, y_pred)
+        gradient = tf.reshape(gradient, [*gradient.shape,1])
+        #print(f"Loss gradient: \n{gradient[0]}")
+        return gradient
+
+    
